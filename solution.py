@@ -368,28 +368,32 @@ class GeneralPolicyIteration:
         TabularPolicy
             The final improved policy after convergence.
         """
+        if init_policy is None:
         rng = np.random.default_rng(0)
-        policy = TabularPolicy(self.mdp, rng)
+        policy = TabularPolicy(self.mdp, rng) 
+    else:
+        policy = init_policy
 
-        while True:
+    while True:
+        factory = PolicyEvaluationFactory(
+            self.mdp,
+            self.gamma,
+            policy,
+            async_mode=self.async_mode,
+            subset=self.subset,
+        )
+        for _ in range(self.steps_per_eval):
+            factory.step()
 
-            factory = PolicyEvaluationFactory(
-                self.mdp,
-                self.gamma,
-                policy,
-                async_mode=self.async_mode,
-                subset=self.subset,
-            )
-            for _ in range(self.steps_per_eval):
-                factory.step()
+        greedy_dict = make_greedy_policy(self.mdp, factory.v, self.gamma)
+        new_policy = TabularPolicy(self.mdp, np.random.default_rng(0), table=greedy_dict)
 
-            new_policy = make_greedy_policy(self.mdp, factory.v, self.gamma)
+        if isinstance(policy, TabularPolicy) and policy.table == new_policy.table:
+            break
 
-            if new_policy.table == policy.table:
-                break
-            policy = new_policy
+        policy = new_policy
 
-        return policy
+    return policy
 
 
 # Example usage and testing
