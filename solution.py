@@ -359,7 +359,7 @@ class GeneralPolicyIteration:
         self.async_mode = async_mode
         self.subset = subset
 
-    def run(self, init_policy=None):
+    def run(self):
         """
         Run the GPI algorithm starting from an initial policy.
 
@@ -368,32 +368,28 @@ class GeneralPolicyIteration:
         TabularPolicy
             The final improved policy after convergence.
         """
-        if init_policy is None:
         rng = np.random.default_rng(0)
-        policy = TabularPolicy(self.mdp, rng) 
-    else:
-        policy = init_policy
+        policy = TabularPolicy(self.mdp, rng)
 
-    while True:
-        factory = PolicyEvaluationFactory(
-            self.mdp,
-            self.gamma,
-            policy,
-            async_mode=self.async_mode,
-            subset=self.subset,
-        )
-        for _ in range(self.steps_per_eval):
-            factory.step()
+        while True:
 
-        greedy_dict = make_greedy_policy(self.mdp, factory.v, self.gamma)
-        new_policy = TabularPolicy(self.mdp, np.random.default_rng(0), table=greedy_dict)
+            factory = PolicyEvaluationFactory(
+                self.mdp,
+                self.gamma,
+                policy,
+                async_mode=self.async_mode,
+                subset=self.subset,
+            )
+            for _ in range(self.steps_per_eval):
+                factory.step()
 
-        if isinstance(policy, TabularPolicy) and policy.table == new_policy.table:
-            break
+            new_policy = make_greedy_policy(self.mdp, factory.v, self.gamma)
 
-        policy = new_policy
+            if new_policy.table == policy.table:
+                break
+            policy = new_policy
 
-    return policy
+        return policy
 
 
 # Example usage and testing
