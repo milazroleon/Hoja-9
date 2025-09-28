@@ -359,7 +359,7 @@ class GeneralPolicyIteration:
         self.async_mode = async_mode
         self.subset = subset
 
-    def run(self):
+    def run(self, init_policy=None):
         """
         Run the GPI algorithm starting from an initial policy.
 
