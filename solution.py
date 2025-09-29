@@ -360,7 +360,7 @@ class GeneralPolicyIteration:
         self.async_mode = async_mode
         self.subset = subset
 
-    def run(self):
+    def run(self, init_policy=None):
         """
         Run the GPI algorithm starting from an initial policy.
 
@@ -370,7 +370,7 @@ class GeneralPolicyIteration:
             The final improved policy after convergence.
         """
         rng = np.random.default_rng(0)
-        policy = TabularPolicy(self.mdp, rng)
+        policy = init_policy if init_policy is not None else TabularPolicy(self.mdp, rng)
 
         while True:
 
