@@ -335,25 +335,7 @@ class PolicyEvaluationFactory:
 
 
 class GeneralPolicyIteration:
-    def __init__(
-        self, mdp, gamma=0.99, steps_per_eval=5, async_mode=False, subset=None
-    ):
-        """
-        Implements General Policy Iteration (GPI) combining policy evaluation and improvement.
-
-        Parameters
-        ----------
-        mdp : MDP
-            The Markov Decision Process.
-        gamma : float, optional
-            Discount factor.
-        steps_per_eval : int, optional
-            Number of evaluation steps per improvement iteration.
-        async_mode : bool, optional
-            Whether to use asynchronous evaluation.
-        subset : list, optional
-            Subset of states to evaluate in async mode.
-        """
+    def __init__(self, mdp, gamma, steps_per_eval=10, async_mode=False, subset=None):
         self.mdp = mdp
         self.gamma = gamma
         self.steps_per_eval = steps_per_eval
@@ -362,33 +344,27 @@ class GeneralPolicyIteration:
 
     def run(self, init_policy=None):
         """
-        Run the GPI algorithm starting from an initial policy.
-
-        Returns
-        -------
-        TabularPolicy
-            The final improved policy after convergence.
+        Run the GPI algorithm starting from an initial policy (dict or TabularPolicy).
         """
         rng = np.random.default_rng(0)
-        policy = init_policy if init_policy is not None else TabularPolicy(self.mdp, rng)
+
+        if init_policy is None:
+            policy = TabularPolicy(self.mdp, rng)
+        elif isinstance(init_policy, dict):
+            policy = TabularPolicy(self.mdp, rng, table=init_policy)
+        else:
+            policy = init_policy
 
         while True:
-
             factory = PolicyEvaluationFactory(
-                self.mdp,
-                self.gamma,
-                policy,
-                async_mode=self.async_mode,
-                subset=self.subset,
+                self.mdp, self.gamma, policy, async_mode=self.async_mode, subset=self.subset
             )
             for _ in range(self.steps_per_eval):
                 factory.step()
-
-            new_policy = make_greedy_policy(self.mdp, factory.v, self.gamma)
-
-            if new_policy.table == policy.table:
+            new_table = make_greedy_policy(self.mdp, factory.v, self.gamma)
+            if new_table == policy.table:
                 break
-            policy = new_policy
+            policy = TabularPolicy(self.mdp, rng, table=new_table)
 
         return policy
 
